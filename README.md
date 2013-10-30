@@ -11,7 +11,7 @@
 
 ## install Ratchet, phpws and GeoIP2
 
-Please install Ratchet (http://maker.github.io/ratchet/) and phpws (https://github.com/Devristo/phpws) into the cloned directory for backend services (stream-server.php and capture-sender.php). And please also install GeoIP2 PHP library and GeoLite2 City database into cloned directory as GeoIP2-php/* and GeoIP2-databases/GeoLite2-City.mmdb.
+Please install Ratchet (http://maker.github.io/ratchet/) and phpws (https://github.com/Devristo/phpws) into the cloned directory for backend services (stream-server.php and capture-sender.php). And please also install GeoLite2 PHP library and GeoLite2 City database into cloned directory as GeoIP2-php/* and GeoIP2-databases/GeoLite2-City.mmdb. GeoLite2 related tools can be downloaded from http://dev.maxmind.com/geoip/geoip2/geolite2/.
 
 ## boot websocket server
 
