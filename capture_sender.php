@@ -9,7 +9,7 @@ use \GeoIp2\Database\Reader;
 
 $options = getopt('c:f:g:hH:i:p:r:t:');
 $capture_interval = 1;
-$filter = 'http or ssl';
+$filter = '(http or ssl) and !ipv6 and !(ip.addr==224.0.0.0/4)';
 $global_uri = 'https://agile.cse.kyoto-su.ac.jp/remote_addr.php';
 $host = '127.0.0.1';
 $interface = 'en0';
@@ -57,7 +57,7 @@ if (is_array($options)) {
   }
 }
 // tshark コマンド，フィルタ等はここで指定
-$tshark_cmd = $tshark . ' -i ' . $interface . " -t e -l -2 -R '" . $filter . "' 2>/dev/null";
+$tshark_cmd = $tshark . ' -i ' . $interface . " -t e -l -2 -Tfields -e col.No. -e col.Time -e col.Source -e col.Destination -e col.Protocol -e col.Length -e col.Info -R '" . $filter . "' 2>/dev/null";
 //$mac_tshark_cmd = "/Applications/Wireshark.app/Contents/Resources/bin/tshark -i en3 -t e -l -2 -R 'http or ssl' 2>/dev/null";
 //$mac_tshark_cmd = "/Applications/Wireshark.app/Contents/Resources/bin/tshark -i en0 -t e -l -2 -R 'http or ssl' 2>/dev/null";
 
@@ -109,7 +109,7 @@ class CaptureSender {
     while ($counter > 0 || $repeat == 0) {
       $start_time = time();
       print "counter: " . $counter . "\n";
-      while ((time() - $start_time) < $interval) {
+      while ((float)(time() - $start_time) < $interval) {
         //print "passed: " . (time() - $start_time) . "\n";
         //print "interval: " . $interval . "\n";
         //stream_set_timeout($this->handle, 1);
@@ -118,30 +118,33 @@ class CaptureSender {
         $buffer = fgets($this->handle);
         if (!empty($buffer)) {
           $raw_message = preg_split("/\s+/", $buffer, 7);
-          $src_ip = $raw_message[1];
+          $src_ip = $raw_message[2];
           $dst_ip = $raw_message[3];
           $ip_array = array($src_ip, $dst_ip);
-          // IPv6 is not supported yet
-          if (!$this->is_true($ip_array, 'all_ipv6')) {
-            $ip_array = $this->conv_addrs($ip_array, 'global_addr');
-            $location_array = $this->conv_addrs($ip_array, 'location');
-            $message = array(
-              'time' =>  $raw_message[0],
-              'src_ip' => $ip_array[0],
-              'src_location' => $location_array[0],
-              'dst_ip' => $ip_array[1],
-              'dst_location' => $location_array[1],
-              'protocol' => $raw_message[4],
-              'length' => $raw_message[5],
-              'data' => $raw_message[6]
-            );
-            print_r($message);
-            array_push($capture_results, $message);
-          }
+          // IPv6 and multicast addresses are not supported yet
+          // check by php is heavy. recommend to filter them out by tshak.
+          //if (!$this->is_true($ip_array, 'all_ipv6')
+          //!$this->is_treu($ip_array, 'all_multicast')) {
+          $ip_array = $this->conv_addrs($ip_array, 'global_addr');
+          $location_array = $this->conv_addrs($ip_array, 'location');
+          $message = array(
+            'number' => $raw_message[0],
+            'time' =>  $raw_message[1],
+            'src_ip' => $ip_array[0],
+            'src_location' => $location_array[0],
+            'dst_ip' => $ip_array[1],
+            'dst_location' => $location_array[1],
+            'protocol' => $raw_message[4],
+            'length' => $raw_message[5],
+            'data' => $raw_message[6]
+          );
+          print_r($message);
+          array_push($capture_results, $message);
+          //}
         }
       }
       if (!empty($capture_results)) {
-        $websocket_msg = WebSocketMessage::create(json_encode($capture_results));
+        $websocket_msg = WebSocketMessage::create(json_encode(array('type' => 'packets', 'packets' => $capture_results)));
         $this->ws->sendMessage($websocket_msg);
       }
       $capture_results = array();
@@ -162,6 +165,14 @@ class CaptureSender {
     $net_c = ip2long('192.168.255.255') >> 16; 
 
     return $ip >> 24 === $net_a || $ip >> 20 === $net_b || $ip >> 16 === $net_c; 
+  }
+
+  function is_multicast($ip)
+  {
+    $ip = ip2long($ip);
+    $net_a = ip2long('224.0.0.0') >> 28;
+
+    return $ip >> 28 === $net_a;
   }
 
   function is_ipv6($ip)
@@ -204,7 +215,6 @@ class CaptureSender {
     return array_map(array($this, $conv_func), $ip_array);
   }
 }
-
 $sender = new CaptureSender($tshark_cmd, $websocket_uri, $global_uri);
 $sender->capture($capture_interval, $repeat);
 $sender->close();

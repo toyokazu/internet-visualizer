@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="d3.v3.js" charset="utf-8"></script>
+    <!--<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>-->
+    <style>
+      .map {
+        fill: #CCDDCC;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="message"></div>
+    <div id="visualization"></div>
+    <script>
+      // shared parameters
+      var canvas = d3.select('#visualization')
+      var width = 960;
+      var height = 520;
+      var svg = canvas.append("svg")
+        .attr("width", width)
+        .attr("height", height);
+      // map element group
+      var svg_map = svg.append('svg:g');
+      // animation element group
+      var svg_anim = svg.append('svg:g');
+      var projection = d3.geo.mercator()
+        .scale(150)
+        .translate([width/2,height/2])
+        .center([0, 30]);
+      var path = d3.geo.path().projection(projection);
+
+      d3.json("ne_110m_land.geojson", function(json) {
+        drawMap(json);
+      });
+
+      function drawMap(json) {
+        var land = svg_map.selectAll('path')
+        .data(json.features).enter().append('svg:path')
+        .attr({
+          'class': 'map',
+          d: path
+        });
+      }
+
+      // test sample packets
+      //var packets = [{"number":"13","time":"1383009292.877417","src_ip":"133.101.57.193","src_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"dst_ip":"173.194.38.55","dst_location":{"isoCode":"US","cityName":"Mountain View","lat":37.4192,"long":-122.0574},"protocol":"TLSv1.2","length":"894","data":"Application Data\n"},{"number":"14","time":"1383009292.877456","src_ip":"133.101.57.193","src_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"dst_ip":"173.194.38.55","dst_location":{"isoCode":"US","cityName":"Mountain View","lat":37.4192,"long":-122.0574},"protocol":"TLSv1.2","length":"91","data":"Application Data\n"},{"number":"90","time":"1382776716.566766","src_ip":"31.13.82.1","src_location":{"isoCode":"IE","cityName":null,"lat":53,"long":-8},"dst_ip":"210.89.228.26","dst_location":{"isoCode":"JP","cityName":"Osaka","lat":34.6864,"long":135.52},"protocol":"TCP","length":"1386","data":"[TCP Segment of a reassembled PDU]\n"},{"number":"91","time":"1382776716.566894","src_ip":"31.13.82.1","src_location":{"isoCode":"IE","cityName":null,"lat":53,"long":-8},"dst_ip":"210.89.228.26","dst_location":{"isoCode":"JP","cityName":"Osaka","lat":34.6864,"long":135.52},"protocol":"TLSv1.2","length":"1386","data":"Application Data\n"},{"number":"92","time":"1382776716.566895","src_ip":"31.13.82.1","src_location":{"isoCode":"IE","cityName":null,"lat":53,"long":-8},"dst_ip":"210.89.228.26","dst_location":{"isoCode":"JP","cityName":"Osaka","lat":34.6864,"long":135.52},"protocol":"TLSv1.2","length":"92","data":"Application Data\n"},{"number":"95","time":"1382776716.567016","src_ip":"31.13.82.1","src_location":{"isoCode":"IE","cityName":null,"lat":53,"long":-8},"dst_ip":"210.89.228.26","dst_location":{"isoCode":"JP","cityName":"Osaka","lat":34.6864,"long":135.52},"protocol":"TCP","length":"1386","data":"[TCP segment of a reassembled PDU]\n"}];
+
+      //var data = {"type":"packets","packets":[{"number":"2","time":"1383093480.579655","src_ip":"133.101.57.194","src_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"dst_ip":"27.253.251.6","dst_location":{"isoCode":"JP","cityName":"Tokyo","lat":35.685,"long":139.7514},"protocol":"TLSv1","length":"364","data":"New Session Ticket, Change Cipher Spec, Encrypted Handshake Message\n"},{"number":"4","time":"1383093480.580142","src_ip":"27.253.251.6","src_location":{"isoCode":"JP","cityName":"Tokyo","lat":35.685,"long":139.7514},"dst_ip":"133.101.57.194","dst_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"protocol":"TLSv1","length":"135","data":"Application Data\n"},{"number":"6","time":"1383093480.692912","src_ip":"27.253.251.6","src_location":{"isoCode":"JP","cityName":"Tokyo","lat":35.685,"long":139.7514},"dst_ip":"133.101.57.194","dst_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"protocol":"TLSv1","length":"172","data":"Application Data, Application Data\n"},{"number":"8","time":"1383093480.809334","src_ip":"133.101.57.194","src_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"dst_ip":"27.253.251.6","dst_location":{"isoCode":"JP","cityName":"Tokyo","lat":35.685,"long":139.7514},"protocol":"TLSv1","length":"486","data":"Application Data, Application Data, Application Data, Application Data\n"},{"number":"10","time":"1383093480.809524","src_ip":"133.101.57.194","src_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"dst_ip":"27.253.251.6","dst_location":{"isoCode":"JP","cityName":"Tokyo","lat":35.685,"long":139.7514},"protocol":"TLSv1","length":"103","data":"Encrypted Alert\n"},{"number":"14","time":"1383093480.809612","src_ip":"27.253.251.6","src_location":{"isoCode":"JP","cityName":"Tokyo","lat":35.685,"long":139.7514},"dst_ip":"133.101.57.194","dst_location":{"isoCode":"JP","cityName":null,"lat":35.69,"long":139.69},"protocol":"TLSv1","length":"103","data":"Encrypted Alert\n"}]};
+
+      //generateAnimation(data['packets']);
+      //generateAnimation(packets);
+
+
+      function toLineString(d) {
+        return {"type": "LineString",
+              "coordinates": [
+              [d["src_location"]["long"], d["src_location"]["lat"]],
+              [d["dst_location"]["long"], d["dst_location"]["lat"]]
+              ]};
+      }
+
+      function toLineStrings(packets) {
+        var array = [];
+        for (var i = 0; i < packets.length; i++) {
+          array.push(toLineString(packets[i]));
+        }
+        return array;
+      }
+
+      function generateAnimation(packets) {
+        pathData = toLineStrings(packets);
+
+        var packetPaths = svg_anim.selectAll(".line").data(pathData);
+        // update packetPaths
+        packetPaths.attr({
+                "class":"line",
+                "d": path,
+                "fill": "none",
+                "opacity": 0.0,
+                "stroke": "black",
+                "stroke-width": 1.5
+                });
+        // enter packetPaths
+        packetPaths.enter().append("path")
+          .attr({
+                "class":"line",
+                "d": path,
+                "fill": "none",
+                "opacity": 0.0,
+                "stroke": "black",
+                "stroke-width": 1.5
+                });
+        // exit packetPaths
+        packetPaths.exit().remove();
+        //path情報取得
+        var pathNodes = svg_anim.selectAll(".line")[0];
+        //console.log(pathNodes);
+        //アニメーションcircle追加   
+        var circles = svg_anim.selectAll(".packet_circle").data(pathNodes);
+        // update circles
+        circles.attr({
+              "class":"packet_circle",
+              r: function (d, i) { return (5 + 10 * packets[i]['length'] / 1500) } ,
+              fill: 'red',
+              transform: function (d) {
+                var p = d.getPointAtLength(0);
+                return "translate(" + [p.x, p.y] + ")";
+              }
+              });
+        // enter circles
+        circles.enter().append("circle")
+          .attr({
+              "class":"packet_circle",
+              r: function (d, i) { return (5 + 10 * packets[i]['length'] / 1500) } ,
+              // r: 10,
+              fill: 'red',
+              transform: function (d) {
+                var p = d.getPointAtLength(0);
+                return "translate(" + [p.x, p.y] + ")";
+              }
+              });
+        // exit circles
+        circles.exit().remove();
+        circles.transition()
+          .duration(1000)
+          .ease("linear")
+          .delay(function(d, i) { return 100 * i; })
+          .attrTween("transform", function (d) {
+              return function (t) {
+              var p = d.getPointAtLength(d.getTotalLength()*t);
+              return "translate(" + [p.x, p.y] + ")";
+              }
+              });
+      }
+
+      // WebSocketサーバに接続
+      var ws = new WebSocket('ws://localhost:12345/');
+      //var ws = new WebSocket('ws://172.16.145.136:8888/');
+
+      /*
+      // エラー処理
+      ws.onerror = function(e){
+        d3.select('#message').empty()
+          .addClass('alert alert-error')
+          .append('<button type="button" class="close" data-dismiss="alert">×</button>',
+              $('<i/>').addClass('icon-warning-sign'),
+              'サーバに接続できませんでした。'
+              );
+      }
+      */
+
+
+      // WebSocketサーバ接続イベント
+      ws.onopen = function() {
+        // 入室情報を文字列に変換して送信
+        ws.send(JSON.stringify({
+          type: 'message',
+          message: 'connected'
+          }));
+      };
+
+      // メッセージ受信イベントを処理
+      ws.onmessage = function(event) {
+        // 受信したメッセージを復元
+        //console.log(event.data);
+        var data = JSON.parse(event.data);
+        switch (data['type']) {
+          case 'packets':
+            generateAnimation(data['packets']);
+          case 'message':
+            d3.select('#message').text(data['message']);
+        }
+      };
+
+      // ブラウザ終了イベント
+      window.onbeforeunload = function () {
+        ws.send(JSON.stringify({
+          type: 'message',
+          user: userName,
+        }));
+      };
+
+    </script>
+  </body>
+</html>
