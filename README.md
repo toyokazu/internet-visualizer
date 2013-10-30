@@ -4,7 +4,14 @@
 
 # How to use
 
-Please install Ratchet (http://maker.github.io/ratchet/) and phpws (https://github.com/Devristo/phpws) into the cloned directory for backend services (stream-server.php and capture-sender.php).
+## clone the source code
+
+    % git clone https://github.com/toyokazu/internet-visualizer.git
+    % cd internet-visualizer
+
+## install Ratchet, phpws and GeoIP2
+
+Please install Ratchet (http://maker.github.io/ratchet/) and phpws (https://github.com/Devristo/phpws) into the cloned directory for backend services (stream-server.php and capture-sender.php). And please also install GeoIP2 PHP library and GeoLite2 City database into cloned directory as GeoIP2-php/* and GeoIP2-databases/GeoLite2-City.mmdb.
 
 ## boot websocket server
 
