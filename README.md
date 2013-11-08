@@ -9,9 +9,11 @@
     % git clone https://github.com/toyokazu/internet-visualizer.git
     % cd internet-visualizer
 
-## install Ratchet, phpws and GeoIP2
+## install Ratchet, phpws, GeoIP2 and Wireshark
 
 Please install Ratchet (http://maker.github.io/ratchet/) and phpws (https://github.com/Devristo/phpws) into the cloned directory for backend services (stream-server.php and capture-sender.php). And please also install GeoLite2 PHP library and GeoLite2 City database into cloned directory as GeoIP2-php/* and GeoIP2-databases/GeoLite2-City.mmdb. GeoLite2 related tools can be downloaded from http://dev.maxmind.com/geoip/geoip2/geolite2/.
+
+capture_sender.php requires tshark command which is a packet capture software included in Wireshark. Thus you must install Wireshark (http://www.wireshark.org/download.html). capture_sender.php specifies a path of Wireshark for MacOS X as a default. You can specify the different path by -t option.
 
 ## boot websocket server
 

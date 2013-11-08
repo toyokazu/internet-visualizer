@@ -9,6 +9,8 @@ use \GeoIp2\Database\Reader;
 
 $options = getopt('c:f:g:hH:i:p:r:t:');
 $capture_interval = 1;
+//$filter = '(http or ssl) and !(ip.addr==224.0.0.0/4)';
+//$filter = '(http or ssl) and !(ip.addr==224.0.0.0/4 or ipv6.addr==fc00::/7 or ipv6.addr==fe80::/10 or ff00::/8)';
 $filter = '(http or ssl) and !ipv6 and !(ip.addr==224.0.0.0/4)';
 $global_uri = 'https://agile.cse.kyoto-su.ac.jp/remote_addr.php';
 $host = '127.0.0.1';
