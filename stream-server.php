@@ -12,7 +12,7 @@ use Ratchet\WebSocket\WsServer;
  * Send any incoming messages to all connected clients (except sender)
  */
 class StreamServer implements MessageComponentInterface {
-//class Chat implements MessageComponentInterface {
+  //class Chat implements MessageComponentInterface {
   protected $clients;
   protected $debug;
 

@@ -1,5 +1,7 @@
 <?php
-require_once __DIR__ . '/phpws/phpws/websocket.client.php';
+//require_once __DIR__ . '/phpws/phpws/websocket.client.php';
+require __DIR__ . '/phpws/vendor/autoload.php';
+
 require __DIR__ . '/GeoIP2-php/vendor/autoload.php';
 use \GeoIp2\Database\Reader;
 
@@ -64,8 +66,16 @@ $tshark_cmd = $tshark . ' -i ' . $interface . " -t e -l -2 -Tfields -e col.No. -
 //$mac_tshark_cmd = "/Applications/Wireshark.app/Contents/Resources/bin/tshark -i en0 -t e -l -2 -R 'http or ssl' 2>/dev/null";
 
 // WebSocket サーバの指定
-$websocket_uri = 'ws://' . $host . ':' . $port . '/';
+//$websocket_uri = 'ws://' . $host . ':' . $port . '/';
 
+// socket.io サーバの設定
+$timestamp = time();
+$socket_io_uri = 'http://' . $host . ':' . $port . '/socket.io/1';
+$res = file_get_contents($socket_io_uri);
+print_r($res . "\n");
+$token = strstr($res, ':', true);
+$websocket_uri = 'ws://' . $host . ':' . $port . '/socket.io/1/websocket/' . $token . '?t=' . $timestamp;
+print_r($websocket_uri . "\n");
 
 // Replace "city" with the appropriate method for your database, e.g.,
 // "country".
@@ -92,14 +102,24 @@ $websocket_uri = 'ws://' . $host . ':' . $port . '/';
  */
 class CaptureSender {
   protected $handle;
-  protected $ws;
+  protected $ws_client;
   protected $reader;
   protected $global_ip;
 
   public function __construct($capture_cmd, $ws_server, $global_uri) {
     $this->handle = popen($capture_cmd, 'r');
-    $this->ws = new WebSocket($ws_server);
-    $this->ws->open();
+    $loop = \React\EventLoop\Factory::create();
+    $logger = new \Zend\Log\Logger();
+    $writer = new \Zend\Log\Writer\Stream("php://output");
+    $logger->addWriter($writer);
+    $client = new \Devristo\Phpws\Client\WebSocket($ws_server, $loop, $logger);
+    //$client->on("connect", function($headers) use ($logger, $client){
+    //  $logger->notice("Connected!");
+    //  $client->send("Hello world!");
+    //});
+    $client->open();
+    $this->ws_client = $client;
+    //$loop->run();
     $this->reader = new Reader(__DIR__ . '/GeoIP2-databases/GeoLite2-City.mmdb');
     // グローバルアドレスの取得
     $this->global_ip = file_get_contents($global_uri);
@@ -146,8 +166,11 @@ class CaptureSender {
         }
       }
       if (!empty($capture_results)) {
-        $websocket_msg = WebSocketMessage::create(json_encode(array('type' => 'packets', 'packets' => $capture_results)));
-        $this->ws->sendMessage($websocket_msg);
+        print_r($this->ws_client);
+        //print_r(json_encode(array('type' => 'packets', 'packets' => $capture_results)));
+        //$message = WebSocketMessage::create($this->socket_io_json(json_encode(array('type' => 'packets', 'packets' => $capture_results))));
+        $message = $this->socket_io_json(json_encode(array('type' => 'packets', 'packets' => $capture_results)));
+        $this->ws_client->send($message);
       }
       $capture_results = array();
       $counter -= 1;
@@ -156,7 +179,11 @@ class CaptureSender {
 
   public function close() {
     fclose($this->handle);
-    $this->ws->close();
+    $this->ws_client->close();
+  }
+
+  function socket_io_json($json) {
+    return '4:::' . $json;
   }
 
   function is_private($ip) 
